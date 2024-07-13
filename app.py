@@ -67,7 +67,7 @@ def execute_macro(
         )
 
         if current_time.minute >= target_minute:
-            print("Executing macro")
+            print("매크로실행")
             for coord in coordinates:
                 x, y = coord
                 mouse_move(x, y, move_duration, error_range, move_duration_error)
