@@ -26,8 +26,8 @@ def mouse_move(target_x, target_y, move_duration, error_range, move_duration_err
         duration_with_error,
     )
     pyautogui.click(add_error(target_x, error_range), add_error(target_y, error_range))
-    print(f"Mouse moved and clicked. X: {click_x}, Y: {click_y}")
-    print(f"Move duration: {duration_with_error}, Error range: {error_range}")
+    print(f"마우스 클릭 좌표 X: {click_x}, Y: {click_y}")
+    print(f"마우스 이동시간: {duration_with_error}, 난수범위: {error_range}")
     coordinates_data.append((click_x, click_y, duration_with_error))
 
 
