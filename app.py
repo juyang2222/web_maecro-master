@@ -73,11 +73,14 @@ def execute_macro(
 
         if current_time.minute == target_minute:
             print("매크로실행")
-            for coord in coordinates:
+            for index, coord in enumerate(coordinates):
                 x, y = coord
-                result = mouse_move(
-                    x, y, move_duration, error_range, move_duration_error
-                )
+                if index == 0:
+                    result = mouse_move(x, y, 0.01075202866756409611, error_range, 0)
+                else:
+                    result = mouse_move(
+                        x, y, move_duration, error_range, move_duration_error
+                    )
                 results.append(result)
             break
 
