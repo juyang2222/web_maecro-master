@@ -73,16 +73,15 @@
     <button type="button" onclick="toggleMousePositionTracking()">
       마우스 좌표 파악하기
     </button>
-
     <script>
       function addCoordinate() {
         const container = document.getElementById("coordinatesContainer");
         const div = document.createElement("div");
         div.className = "coordinate";
         div.innerHTML = `
-                <input type="number" name="x" placeholder="X" required>
-                <input type="number" name="y" placeholder="Y" required><br>
-            `;
+                  <input type="number" name="x" placeholder="X" required>
+                  <input type="number" name="y" placeholder="Y" required><br>
+              `;
         container.appendChild(div);
       }
 
@@ -163,6 +162,53 @@
           const data = JSON.parse(event.data);
           updateMousePosition(data.x, data.y);
         };
+      }
+
+      function startMacro() {
+        const form = document.getElementById("macroForm");
+        const url = form.url.value;
+        const targetMinute = form.target_minute.value;
+        const moveDuration = form.move_duration.value;
+        const errorRange = form.error_range.value;
+        const moveDurationError = form.move_duration_error.value;
+
+        const coordinates = [];
+        const coordinateDivs = form.querySelectorAll(".coordinate");
+        coordinateDivs.forEach((div) => {
+          const x = div.querySelector('input[name="x"]').value;
+          const y = div.querySelector('input[name="y"]').value;
+          coordinates.push({ x, y });
+        });
+
+        fetch("/start_macro", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            url,
+            target_minute: targetMinute,
+            move_duration: moveDuration,
+            error_range: errorRange,
+            move_duration_error: moveDurationError,
+            coordinates,
+          }),
+        })
+          .then((response) => response.json())
+          .then((data) => {
+            console.log(data);
+            alert(data.status);
+            const macroCoordinatesDiv =
+              document.getElementById("macroCoordinates");
+            macroCoordinatesDiv.innerHTML = "";
+            if (data.results) {
+              data.results.forEach((result) => {
+                const coordDiv = document.createElement("div");
+                coordDiv.innerText = `X: ${result.click_x}, Y: ${result.click_y}, 마우스 이동시간: ${result.duration_with_error}`;
+                macroCoordinatesDiv.appendChild(coordDiv);
+              });
+            }
+          });
       }
     </script>
   </body>

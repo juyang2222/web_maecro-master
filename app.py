@@ -1,3 +1,4 @@
+import json
 from flask import Flask, render_template, request, jsonify, Response
 import urllib.request
 from datetime import datetime, timedelta
@@ -5,7 +6,6 @@ import time
 import pyautogui
 import random
 import threading
-import json  # json 모듈 임포트
 
 app = Flask(__name__)
 coordinates_data = []
@@ -20,15 +20,16 @@ def mouse_move(target_x, target_y, move_duration, error_range, move_duration_err
     click_x = add_error(target_x, error_range)
     click_y = add_error(target_y, error_range)
 
-    pyautogui.moveTo(
-        click_x,
-        click_y,
-        duration_with_error,
-    )
+    pyautogui.moveTo(click_x, click_y, duration_with_error)
     pyautogui.click(add_error(target_x, error_range), add_error(target_y, error_range))
-    print(f"마우스 클릭 좌표 X: {click_x}, Y: {click_y}")
-    print(f"마우스 이동시간: {duration_with_error}, 난수범위: {error_range}")
-    coordinates_data.append((click_x, click_y, duration_with_error))
+
+    result = {
+        "click_x": click_x,
+        "click_y": click_y,
+        "duration_with_error": duration_with_error,
+    }
+    coordinates_data.append(result)
+    return result
 
 
 month = {
@@ -50,6 +51,7 @@ month = {
 def execute_macro(
     url, target_minute, coordinates, move_duration, error_range, move_duration_error
 ):
+    results = []
     while True:
         response = urllib.request.urlopen(url)
         date_str = response.headers["Date"][5:-4]
@@ -70,11 +72,16 @@ def execute_macro(
             print("매크로실행")
             for coord in coordinates:
                 x, y = coord
-                mouse_move(x, y, move_duration, error_range, move_duration_error)
+                result = mouse_move(
+                    x, y, move_duration, error_range, move_duration_error
+                )
+                results.append(result)
             break
 
         print(f"{y}년 {m}월 {d}일 {hour}시 {minute}분 {sec}초")
         print(minute)
+
+    return results
 
 
 @app.route("/")
@@ -114,18 +121,24 @@ def start_macro():
     error_range = float(data["error_range"])
     move_duration_error = float(data["move_duration_error"])
 
-    threading.Thread(
-        target=execute_macro,
-        args=(
+    results = []
+
+    def run_macro():
+        nonlocal results
+        results = execute_macro(
             url,
             target_minute,
             coordinates,
             move_duration,
             error_range,
             move_duration_error,
-        ),
-    ).start()
-    return jsonify({"status": "매크로가 시작되었습니다"})
+        )
+
+    macro_thread = threading.Thread(target=run_macro)
+    macro_thread.start()
+    macro_thread.join()
+
+    return jsonify({"status": "매크로가 완료되었습니다", "results": results})
 
 
 @app.route("/get_coordinates", methods=["GET"])
