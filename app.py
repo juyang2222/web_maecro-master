@@ -68,7 +68,10 @@ def execute_macro(
             int(y), int(m), int(d), int(hour), int(minute), int(sec)
         )
 
-        if current_time.minute >= target_minute:
+        print(f"{y}년 {m}월 {d}일 {hour}시 {minute}분 {sec}초")
+        print(minute)
+
+        if current_time.minute == target_minute:
             print("매크로실행")
             for coord in coordinates:
                 x, y = coord
@@ -77,9 +80,6 @@ def execute_macro(
                 )
                 results.append(result)
             break
-
-        print(f"{y}년 {m}월 {d}일 {hour}시 {minute}분 {sec}초")
-        print(minute)
 
     return results
 
@@ -104,10 +104,7 @@ def get_server_time():
     )
     current_time = datetime(int(y), int(m), int(d), int(hour), int(minute), int(sec))
 
-    # Adjust time to match local timezone (Assuming the server time is UTC)
-    adjusted_time = current_time + timedelta(
-        hours=18
-    )  # Adjust to KST (Korean Standard Time) UTC+9
+    adjusted_time = current_time + timedelta(hours=18)
     return jsonify({"server_time": adjusted_time.strftime("%Y-%m-%d %H:%M:%S")})
 
 
