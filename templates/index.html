@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html lang="ko">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>매크로 실행 페이지</title>
+  </head>
+  <body>
+    <h1>매크로 실행 페이지</h1>
+    <form id="macroForm">
+      <label for="url">서버 시간 URL:</label>
+      <input type="text" id="url" name="url" required /><br /><br />
+
+      <label for="target_minute">목표 분:</label>
+      <input
+        type="number"
+        id="target_minute"
+        name="target_minute"
+        min="0"
+        max="59"
+        required
+      /><br /><br />
+
+      <label for="move_duration">마우스 이동 시간 (초):</label>
+      <input
+        type="number"
+        id="move_duration"
+        name="move_duration"
+        step="0.01"
+        required
+      /><br /><br />
+
+      <label for="move_duration_error">이동 시간 난수 범위 (초):</label>
+      <input
+        type="number"
+        id="move_duration_error"
+        name="move_duration_error"
+        step="0.01"
+        required
+      /><br /><br />
+
+      <label for="error_range">좌표 난수 범위:</label>
+      <input
+        type="number"
+        id="error_range"
+        name="error_range"
+        step="0.01"
+        required
+      /><br /><br />
+
+      <label for="coordinates">좌표 (x, y):</label><br />
+      <div id="coordinatesContainer">
+        <div class="coordinate">
+          <input type="number" name="x" placeholder="X" required />
+          <input type="number" name="y" placeholder="Y" required /><br />
+        </div>
+      </div>
+      <button type="button" onclick="addCoordinate()">좌표 추가</button
+      ><br /><br />
+
+      <button type="button" onclick="startMacro()">매크로 시작</button>
+    </form>
+
+    <h2>서버 시간</h2>
+    <div id="serverTime"></div>
+    <button type="button" onclick="getServerTime()">서버 시간 불러오기</button>
+
+    <h2>매크로 실행 좌표 및 이동 시간</h2>
+    <div id="macroCoordinates"></div>
+
+    <h2>현재 마우스 좌표</h2>
+    <div id="mousePosition"></div>
+    <button type="button" onclick="toggleMousePositionTracking()">
+      마우스 좌표 파악하기
+    </button>
+
+    <script>
+      function addCoordinate() {
+        const container = document.getElementById("coordinatesContainer");
+        const div = document.createElement("div");
+        div.className = "coordinate";
+        div.innerHTML = `
+                <input type="number" name="x" placeholder="X" required>
+                <input type="number" name="y" placeholder="Y" required><br>
+            `;
+        container.appendChild(div);
+      }
+
+      function startMacro() {
+        const form = document.getElementById("macroForm");
+        const url = form.url.value;
+        const targetMinute = form.target_minute.value;
+        const moveDuration = form.move_duration.value;
+        const errorRange = form.error_range.value;
+        const moveDurationError = form.move_duration_error.value;
+
+        const coordinates = [];
+        const coordinateDivs = form.querySelectorAll(".coordinate");
+        coordinateDivs.forEach((div) => {
+          const x = div.querySelector('input[name="x"]').value;
+          const y = div.querySelector('input[name="y"]').value;
+          coordinates.push({ x, y });
+        });
+
+        fetch("/start_macro", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            url,
+            target_minute: targetMinute,
+            move_duration: moveDuration,
+            error_range: errorRange,
+            move_duration_error: moveDurationError,
+            coordinates,
+          }),
+        })
+          .then((response) => response.json())
+          .then((data) => {
+            console.log(data);
+            alert(data.status);
+          });
+      }
+
+      let serverTime = null;
+      let intervalId = null;
+
+      function updateServerTime() {
+        const serverTimeElement = document.getElementById("serverTime");
+        if (serverTime) {
+          serverTime.setSeconds(serverTime.getSeconds() + 1);
+          serverTimeElement.innerText = serverTime
+            .toISOString()
+            .substr(0, 19)
+            .replace("T", " ");
+        }
+      }
+
+      function getServerTime() {
+        const url = document.getElementById("url").value;
+        fetch(`/get_server_time?url=${encodeURIComponent(url)}`)
+          .then((response) => response.json())
+          .then((data) => {
+            serverTime = new Date(data.server_time);
+            document.getElementById("serverTime").innerText = serverTime
+              .toISOString()
+              .substr(0, 19)
+              .replace("T", " ");
+            if (!intervalId) {
+              intervalId = setInterval(updateServerTime, 1000);
+            }
+          });
+      }
+
+      function updateMousePosition(x, y) {
+        document.getElementById("mousePosition").innerText = `X: ${x}, Y: ${y}`;
+      }
+
+      function toggleMousePositionTracking() {
+        const eventSource = new EventSource("/get_coordinates");
+        eventSource.onmessage = function (event) {
+          const data = JSON.parse(event.data);
+          updateMousePosition(data.x, data.y);
+        };
+      }
+    </script>
+  </body>
+</html>
