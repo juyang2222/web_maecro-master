@@ -222,7 +222,7 @@
             if (data.results) {
               data.results.forEach((result) => {
                 const coordDiv = document.createElement("div");
-                coordDiv.innerText = `X: ${result.click_x}, Y: ${result.click_y}, 마우스 이동시간: ${result.duration_with_error}`;
+                coordDiv.innerText = `X: ${result.click_x}, Y: ${result.click_y}, 마우스 이동시간: ${result.duration_with_error}, 클릭 시간: ${result.server_time}`;
                 macroCoordinatesDiv.appendChild(coordDiv);
               });
             }

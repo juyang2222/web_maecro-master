@@ -15,6 +15,49 @@ def add_error(value, error_range=1):
     return value + random.uniform(-error_range, error_range)
 
 
+def get_server_time(url):
+    response = urllib.request.urlopen(url)
+    date_str = response.headers["Date"][5:-4]
+    d, m, y, hour, minute, sec = (
+        date_str[:2],
+        month[date_str[3:6]],
+        date_str[7:11],
+        date_str[12:14],
+        date_str[15:17],
+        date_str[18:],
+    )
+    current_time = datetime(int(y), int(m), int(d), int(hour), int(minute), int(sec))
+    return current_time.strftime("%Y-%m-%d %H:%M:%S")
+
+
+def execute_macro(
+    url, target_minute, coordinates, move_duration, error_range, move_duration_error
+):
+    results = []
+    while True:
+        server_time = get_server_time(url)
+        current_time = datetime.strptime(server_time, "%Y-%m-%d %H:%M:%S")
+
+        print(f"서버 시간: {server_time}")
+        print(current_time.minute)
+
+        if current_time.minute == target_minute:
+            print("매크로실행")
+            for index, coord in enumerate(coordinates):
+                x, y = coord
+                if index == 0:
+                    result = mouse_move(x, y, 0.01075202866756409611, error_range, 0)
+                else:
+                    result = mouse_move(
+                        x, y, move_duration, error_range, move_duration_error
+                    )
+                result["server_time"] = server_time  # 서버 시간을 결과에 추가
+                results.append(result)
+            break
+
+    return results
+
+
 def mouse_move(target_x, target_y, move_duration, error_range, move_duration_error):
     duration_with_error = add_error(move_duration, move_duration_error)
     click_x = add_error(target_x, error_range)
@@ -27,6 +70,7 @@ def mouse_move(target_x, target_y, move_duration, error_range, move_duration_err
         "click_x": click_x,
         "click_y": click_y,
         "duration_with_error": duration_with_error,
+        # 'server_time' 필드는 'execute_macro' 함수에서 추가됨
     }
     coordinates_data.append(result)
     return result
@@ -48,52 +92,13 @@ month = {
 }
 
 
-def execute_macro(
-    url, target_minute, coordinates, move_duration, error_range, move_duration_error
-):
-    results = []
-    while True:
-        response = urllib.request.urlopen(url)
-        date_str = response.headers["Date"][5:-4]
-        d, m, y, hour, minute, sec = (
-            date_str[:2],
-            month[date_str[3:6]],
-            date_str[7:11],
-            date_str[12:14],
-            date_str[15:17],
-            date_str[18:],
-        )
-
-        current_time = datetime(
-            int(y), int(m), int(d), int(hour), int(minute), int(sec)
-        )
-
-        print(f"{y}년 {m}월 {d}일 {hour}시 {minute}분 {sec}초")
-        print(minute)
-
-        if current_time.minute == target_minute:
-            print("매크로실행")
-            for index, coord in enumerate(coordinates):
-                x, y = coord
-                if index == 0:
-                    result = mouse_move(x, y, 0.01075202866756409611, error_range, 0)
-                else:
-                    result = mouse_move(
-                        x, y, move_duration, error_range, move_duration_error
-                    )
-                results.append(result)
-            break
-
-    return results
-
-
 @app.route("/")
 def index():
     return render_template("index.html")
 
 
 @app.route("/get_server_time", methods=["GET"])
-def get_server_time():
+def get_server_time_endpoint():
     url = request.args.get("url")
     response = urllib.request.urlopen(url)
     date_str = response.headers["Date"][5:-4]
