@@ -46,7 +46,7 @@ def execute_macro(
             for index, coord in enumerate(coordinates):
                 x, y = coord
                 if index == 0:
-                    result = mouse_move(x, y, 0.01075202866756409611, error_range, 0)
+                    result = mouse_move(x, y, 0.001475202866756409611, error_range, 0)
                 else:
                     result = mouse_move(
                         x, y, move_duration, error_range, move_duration_error
