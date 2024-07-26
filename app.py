@@ -16,6 +16,7 @@ def add_error(value, error_range=1):
 
 
 def get_server_time(url):
+    req = urllib.request.Request(url, headers={"User-Agent": "Mozilla/5.0"})
     response = urllib.request.urlopen(url)
     date_str = response.headers["Date"][5:-4]
     d, m, y, hour, minute, sec = (
